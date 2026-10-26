@@ -15,7 +15,7 @@ Leave out patient names, dates and other identifying details.
 
 ## Where stories are saved
 
-- **On this website:** stories are saved to one shared book in Supabase. People sign in with an emailed link, and only emails listed in the Supabase `allowed_emails` table can read or add stories. To add someone, open Supabase → Table Editor → `allowed_emails` and insert their email.
+- **On this website:** stories are saved to one shared book in Supabase. Opening the book takes a shared passcode, entered once per device. The passcode is stored in the Supabase `book_secret` table; change it there to lock everyone out until they enter the new one.
 - **In Claude:** the Claude version of this app keeps one shared book for everyone it’s shared with and adds a “Clean up with Claude” button that tidies dictated text.
 
 ## Files

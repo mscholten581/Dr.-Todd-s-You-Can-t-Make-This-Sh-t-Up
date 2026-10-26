@@ -179,72 +179,63 @@ function persistSoon(id, getData){ clearTimeout(timers[id]); setSave("Editing…
 const storyData = s => ({ kind:"story", title:s.title||"", text:s.text||"", order:s.order??0, createdAt:s.createdAt||Date.now(), updatedAt:Date.now(), example:!!s.example });
 const bookData = () => ({ kind:"book", title:book.title, subtitle:book.subtitle, author:book.author, dedication:book.dedication });
 
+const PASS_KEY = "storybook-passcode";
+const getPass = () => { try { return localStorage.getItem(PASS_KEY) || ""; } catch { return ""; } };
+const setPass = v => { try { v ? localStorage.setItem(PASS_KEY, v) : localStorage.removeItem(PASS_KEY); } catch {} };
+let sbPass = "", sbPoll = null, gateMsg = "";
 async function sbWrite(id, data){
   let res;
-  if (data === "__delete") res = await sb.from("stories").delete().eq("id", id);
-  else if (data.kind === "book") res = await sb.from("book").upsert({ id:1, title:data.title, subtitle:data.subtitle, author:data.author, dedication:data.dedication });
-  else res = await sb.from("stories").upsert({ id, title:data.title, body:data.text, position:data.order, updated_at:new Date().toISOString() });
+  if (data === "__delete") res = await sb.rpc("delete_story", { pass:sbPass, story_id:id });
+  else if (data.kind === "book") res = await sb.rpc("save_book", { pass:sbPass, b_title:data.title, b_subtitle:data.subtitle, b_author:data.author, b_dedication:data.dedication });
+  else res = await sb.rpc("save_story", { pass:sbPass, story_id:id, story_title:data.title, story_body:data.text, story_position:data.order });
   if (res.error) throw res.error;
 }
 async function initSb(){
   store = { kind:"sb" };
-  render();
-  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  sb.auth.onAuthStateChange((ev, session) => {
-    if (session?.user && !sbUser){ sbUser = session.user; loadSb(); }
-    if (ev === "SIGNED_OUT"){ sbUser = null; needSignIn = true; notAllowed = false; stories = {}; setSave("Not signed in"); render(); }
-  });
-  const { data } = await sb.auth.getSession();
-  if (data?.session?.user){ if (!sbUser){ sbUser = data.session.user; loadSb(); } }
-  else if (!sbUser){ needSignIn = true; setSave("Not signed in"); render(); }
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth:{ persistSession:false, autoRefreshToken:false, detectSessionInUrl:false } });
+  sbPass = getPass();
+  if (!sbPass){ needSignIn = true; setSave("Locked"); render(); return; }
+  render(); loadSb();
 }
 async function loadSb(){
-  needSignIn = false;
-  const [b, rows] = await Promise.all([
-    sb.from("book").select("*").eq("id", 1).maybeSingle(),
-    sb.from("stories").select("*").order("position")
-  ]);
-  if (b.error || rows.error){ setSave("Couldn't load the book. Reload to try again."); return; }
-  if (!b.data){ notAllowed = true; setSave("Not on the list"); render(); return; }
-  notAllowed = false;
-  if (!document.activeElement?.closest?.(".bookinfo")) book = { title:b.data.title ?? DEFAULT_BOOK.title, subtitle:b.data.subtitle ?? DEFAULT_BOOK.subtitle, author:b.data.author ?? DEFAULT_BOOK.author, dedication:b.data.dedication || "" };
+  if (!sbPass) return;
+  const { data, error } = await sb.rpc("get_book", { pass:sbPass });
+  if (error){
+    if (/passcode/i.test(error.message || "")){ sbPass = ""; setPass(""); needSignIn = true; gateMsg = "That passcode didn't work. Check it and try again."; setSave("Locked"); render(); }
+    else setSave("Couldn't load the book. Reload to try again.");
+    return;
+  }
+  const firstLoad = needSignIn || !sbUser;
+  needSignIn = false; sbUser = { email:"" };
+  const b = data?.book || {};
+  if (!document.activeElement?.closest?.(".bookinfo")) book = { title:b.title ?? DEFAULT_BOOK.title, subtitle:b.subtitle ?? DEFAULT_BOOK.subtitle, author:b.author ?? DEFAULT_BOOK.author, dedication:b.dedication || "" };
   const next = {};
-  rows.data.forEach(r => { next[r.id] = { id:r.id, title:r.title || "", text:r.body || "", order:r.position ?? 0, createdAt:Date.parse(r.created_at) || 0 }; });
+  (data?.stories || []).forEach(r => { next[r.id] = { id:r.id, title:r.title || "", text:r.body || "", order:r.position ?? 0, createdAt:Date.parse(r.created_at) || 0 }; });
   if (editingId && stories[editingId]) next[editingId] = stories[editingId];
   stories = next;
-  if (!sbChannel){
-    const again = () => { clearTimeout(sbTimer); sbTimer = setTimeout(loadSb, 600); };
-    sbChannel = sb.channel("book-changes")
-      .on("postgres_changes", { event:"*", schema:"public", table:"stories" }, again)
-      .on("postgres_changes", { event:"*", schema:"public", table:"book" }, again)
-      .subscribe();
-    setSave("Shared book · saved");
+  if (firstLoad) setSave("Shared book · saved");
+  if (!sbPoll){
+    sbPoll = setInterval(() => { if (!document.hidden) loadSb(); }, 15000);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) loadSb(); });
   }
   if (!editingId && !document.activeElement?.closest?.(".bookinfo")) render(); else renderHeader();
 }
+function lockBook(){ sbPass = ""; setPass(""); sbUser = null; stories = {}; needSignIn = true; gateMsg = ""; setSave("Locked"); render(); }
 
 function renderGate(){
-  if (notAllowed){
-    $("#view").innerHTML = `<div class="empty"><h2>You're not on the list yet</h2><p>You're signed in as <b>${esc(sbUser?.email)}</b>, but that email can't open this book. Ask the book's owner to add it, then sign in again.</p><button class="btn" id="signout">Sign out</button></div>`;
-    $("#signout").onclick = () => sb.auth.signOut();
-    return;
-  }
-  $("#view").innerHTML = `<div class="empty"><h2>Sign in to open the book</h2>
-    <p>Enter your email and you'll get a sign-in link. Only people on the book's list can read and add stories.</p>
+  $("#view").innerHTML = `<div class="empty"><h2>Enter the book passcode</h2>
+    <p>Ask the person who sent you this link for the passcode. You only need to enter it once on this device.</p>
     <form id="signin" class="row" style="width:100%;max-width:400px">
-      <input class="inp" id="email" type="email" required autocomplete="email" placeholder="you@example.com" aria-label="Email">
-      <button class="btn primary" id="sendLink">Email me a link</button>
+      <input class="inp" id="passIn" type="password" required autocomplete="current-password" placeholder="Passcode" aria-label="Book passcode">
+      <button class="btn primary" id="unlock">Open the book</button>
     </form>
-    <p class="note" id="signNote"></p></div>`;
+    <p class="note${gateMsg ? " err" : ""}" id="signNote">${esc(gateMsg)}</p></div>`;
   $("#signin").onsubmit = async e => {
     e.preventDefault();
-    const email = $("#email").value.trim(), note = $("#signNote"), btn = $("#sendLink");
-    if (!email) return;
-    btn.disabled = true; note.className = "note"; note.textContent = "Sending…";
-    const { error } = await sb.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.origin + location.pathname } });
-    btn.disabled = false;
-    if (error){ note.className = "note err"; note.textContent = /rate|seconds/i.test(error.message) ? "A link was just sent. Wait a minute before asking for another." : "The link didn't send. Check the email address and try again."; }
-    else note.textContent = `Check ${email} for the sign-in link. Open it on this device.`;
+    const v = $("#passIn").value.trim(); if (!v) return;
+    $("#unlock").disabled = true; $("#signNote").className = "note"; $("#signNote").textContent = "Opening…";
+    sbPass = v; setPass(v); gateMsg = ""; await loadSb();
+    if ($("#unlock")) $("#unlock").disabled = false;
   };
 }
 
@@ -287,7 +278,7 @@ function render(){
   renderHeader();
   $("#tabStories").setAttribute("aria-pressed", view==="stories");
   $("#tabBook").setAttribute("aria-pressed", view==="book");
-  if (store?.kind === "sb" && (needSignIn || notAllowed)) return renderGate();
+  if (store?.kind === "sb" && needSignIn) return renderGate();
   if (store?.kind === "sb" && !sbUser) { $("#view").innerHTML = ""; return; }
   if (view === "book") return renderBook();
   if (editingId && stories[editingId]) return renderEditor();
@@ -333,14 +324,14 @@ function renderList(){
           <p> ${(store?.kind==="db"||store?.kind==="sb") ? "This book is shared, so everyone with edit access sees the same stories." : "Stories save in this browser on this device."} One shift, one story. Tap <b>Record a story</b>, then use the microphone on your phone keyboard and tell it like you would at the nurses’ station. Each story becomes a chapter.</p>
           ${readOnly ? "" : `<button class="btn" id="example">Add an example story</button>`}
         </div>`}
-      ${store?.kind==="sb" && sbUser ? `<div class="row note">Signed in as ${esc(sbUser.email)}<button class="btn quiet" id="signout">Sign out</button></div>` : ""}
+      ${store?.kind==="sb" && sbUser ? `<div class="row note">Unlocked on this device<button class="btn quiet" id="signout">Lock</button></div>` : ""}
     </section>`;
   const bind = (id, key) => $(id).addEventListener("input", e => { book[key] = e.target.value; renderHeader(); persistSoon("book", bookData); });
   bind("#bTitle","title"); bind("#bSub","subtitle"); bind("#bAuthor","author"); bind("#bDed","dedication");
   if (readOnly) $("#view").insertAdjacentHTML("afterbegin", `<p class="note" style="margin-bottom:12px">You can read this book. To add or edit stories, ask the person who shared it for edit access.</p>`);
   if (!readOnly) $("#newStory").onclick = () => { const id=newId(); const max=Math.max(0,...ordered().map(s=>s.order??0)); stories[id]={id,title:"",text:"",order:max+1,createdAt:Date.now()}; editingId=id; persist(id, storyData(stories[id])); render(); setTimeout(()=>$("#storyText")?.focus(),50); };
   $("#example")?.addEventListener("click", addExample);
-  $("#signout")?.addEventListener("click", () => sb.auth.signOut());
+  $("#signout")?.addEventListener("click", lockBook);
   $("#view").querySelectorAll("[data-open]").forEach(el => { const open=()=>{ if (readOnly){ const i=ordered().filter(x=>x.text.trim()).findIndex(x=>x.id===el.dataset.open); view="book"; render(); document.getElementById("ch"+(i+1))?.scrollIntoView(); return; } editingId=el.dataset.open; render(); window.scrollTo(0,0);}; el.onclick=open; el.onkeydown=e=>{if(e.key==="Enter")open();}; });
   $("#view").querySelectorAll("[data-up],[data-down]").forEach(b => b.onclick = () => move(b.dataset.up||b.dataset.down, b.dataset.up?-1:1));
 }

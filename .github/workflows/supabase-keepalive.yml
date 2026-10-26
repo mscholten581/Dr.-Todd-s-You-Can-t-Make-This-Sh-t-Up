@@ -1,0 +1,53 @@
+name: Supabase keep-alive
+
+# Free Supabase projects pause after 7 days without activity.
+# This reads the database every 5 days so the book stays online.
+on:
+  schedule:
+    - cron: "17 14 */5 * *"   # 14:17 UTC on days 1, 6, 11, 16, 21, 26, 31
+  workflow_dispatch: {}        # "Run workflow" button for a manual ping
+
+permissions:
+  contents: write
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: https://bxskhievxihyxtsrepkf.supabase.co
+      # Publishable key: meant to be public (it is already in index.html).
+      SUPABASE_KEY: sb_publishable_fILO3TRgJPuvt_tKGauUqQ_pOZzYc8a
+    steps:
+      - name: Query the database
+        run: |
+          for attempt in 1 2 3; do
+            code=$(curl -s -o /tmp/body.txt -w "%{http_code}" \
+              "$SUPABASE_URL/rest/v1/book?select=id&limit=1" \
+              -H "apikey: $SUPABASE_KEY")
+            echo "Attempt $attempt: HTTP $code"
+            if [ "$code" = "200" ]; then exit 0; fi
+            sleep 30
+          done
+          echo "Supabase did not answer. If the project is paused, restore it from the Supabase dashboard."
+          cat /tmp/body.txt
+          exit 1
+
+      # GitHub turns off scheduled workflows after 60 days with no commits.
+      # Commit a small heartbeat file only when the repo has been quiet for 45+ days.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Keep the schedule from being switched off
+        run: |
+          last=$(git log -1 --format=%ct)
+          now=$(date +%s)
+          if [ $(( (now - last) / 86400 )) -ge 45 ]; then
+            date -u +"%Y-%m-%dT%H:%M:%SZ" > .github/keepalive.txt
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add .github/keepalive.txt
+            git commit -m "Keep scheduled workflow active"
+            git push
+          else
+            echo "Repo had a commit in the last 45 days; nothing to do."
+          fi

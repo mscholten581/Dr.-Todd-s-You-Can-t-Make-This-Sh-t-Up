@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Dr. Todd’s You Can’t Make This Sh*t Up</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow column; two views (Stories / Book) under a sticky switcher. The book view is a stack of "pages". */
+:root{
+  --paper:#f7f8f6; --surface:#ffffff; --ink:#1c2427; --muted:#5e6a6c; --line:#dde2df;
+  --cloth:#1d5c55; --cloth-ink:#ffffff; --cloth-soft:#e3efec; --rec:#b4432f; --page:#fffefb;
+  --display:"Young Serif", Georgia, serif;
+  --book:"Literata", Georgia, "Times New Roman", serif;
+  --ui:"Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#121718; --surface:#1a2122; --ink:#e7ecea; --muted:#9aa7a6; --line:#2c3638;
+  --cloth:#5fb3a6; --cloth-ink:#0e1a19; --cloth-soft:#1e3330; --rec:#e0826f; --page:#1d2425; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#121718; --surface:#1a2122; --ink:#e7ecea; --muted:#9aa7a6; --line:#2c3638;
+  --cloth:#5fb3a6; --cloth-ink:#0e1a19; --cloth-soft:#1e3330; --rec:#e0826f; --page:#1d2425; color-scheme:dark}
+html,body{background:var(--paper);color:var(--ink)}
+body{font-family:var(--ui);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+.wrap{max-width:680px;margin:0 auto;padding-block:20px 64px;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--display);font-weight:400;text-wrap:balance;margin:0}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--cloth);outline-offset:2px}
+.brand{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand h1{font-size:28px;line-height:1.1}
+.save-state{font-size:12px;color:var(--muted);letter-spacing:.02em}
+.switch{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);padding-block:8px;display:flex;gap:6px}
+.switch button{flex:1;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:9px 12px;font-weight:600;font-size:14px}
+.switch button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 14px;font-weight:600;font-size:14px;display:inline-flex;align-items:center;gap:8px;justify-content:center}
+.btn.primary{background:var(--cloth);color:var(--cloth-ink);border-color:var(--cloth)}
+.btn.quiet{background:transparent;border-color:transparent;color:var(--muted);padding-inline:8px}
+.btn.danger{color:var(--rec)}
+.btn:disabled{opacity:.5;cursor:default}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.field input{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 11px;width:100%;box-sizing:border-box}
+.bookinfo{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:520px){.bookinfo{grid-template-columns:1fr}}
+.stats{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.list{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.item{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}
+.num{font-family:var(--display);font-size:22px;color:var(--cloth);width:28px;text-align:center;font-variant-numeric:tabular-nums}
+.item .body{min-width:0;cursor:pointer}
+.item h3{font-size:18px;line-height:1.25}
+.item p{margin:2px 0 0;color:var(--muted);font-family:var(--book);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .meta{font-size:12px;color:var(--muted);margin-top:4px;font-variant-numeric:tabular-nums}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:1px 7px;border-radius:999px;background:var(--cloth-soft);color:var(--cloth);margin-left:6px;vertical-align:middle}
+.moves{display:flex;flex-direction:column;gap:2px}
+.moves button{border:0;background:transparent;color:var(--muted);padding:4px 8px;border-radius:6px;font-size:16px;line-height:1}
+.moves button:disabled{opacity:.25}
+.empty{border:1px dashed var(--line);border-radius:14px;padding:28px 20px;text-align:center;display:flex;flex-direction:column;gap:12px;align-items:center}
+.empty h2{font-size:22px}
+.empty p{margin:0;color:var(--muted);max-width:42ch}
+/* editor */
+.editor{display:flex;flex-direction:column;gap:12px}
+.editor .titlein{font-family:var(--display);font-size:24px;border:0;border-bottom:1px solid var(--line);background:transparent;padding:6px 0;width:100%}
+.dictate{display:flex;gap:10px;align-items:flex-start;background:var(--cloth-soft);border-radius:12px;padding:12px 14px;font-size:14px}
+.dictate svg{flex:none;margin-top:2px;color:var(--cloth)}
+.editor textarea{min-height:46vh;border:1px solid var(--line);border-radius:12px;background:var(--page);padding:16px;font-family:var(--book);font-size:17px;line-height:1.7;resize:vertical;width:100%;box-sizing:border-box}
+.note{font-size:13px;color:var(--muted);margin:0}
+.note.err{color:var(--rec)}
+/* book */
+.page{background:var(--page);border:1px solid var(--line);border-radius:4px;box-shadow:0 1px 0 var(--line),0 12px 30px -18px rgba(0,0,0,.25);padding:clamp(24px,7vw,56px) clamp(20px,7vw,60px)}
+.titlepage{text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center;padding-block:64px}
+.titlepage h2{font-size:clamp(30px,8vw,44px);line-height:1.1}
+.titlepage .by{font-family:var(--book);font-style:italic;color:var(--muted);font-size:18px}
+.rule{width:48px;height:2px;background:var(--cloth)}
+.dedication{text-align:center;font-family:var(--book);font-style:italic;color:var(--muted);padding-block:40px}
+.toc h3,.chapter .ch-label{font-size:12px;font-family:var(--ui);letter-spacing:.12em;text-transform:uppercase;color:var(--cloth);font-weight:600}
+.toc ol{list-style:none;padding:0;margin:16px 0 0;display:flex;flex-direction:column;gap:8px;font-family:var(--book)}
+.toc li{display:flex;gap:10px;align-items:baseline}
+.toc li span:first-child{color:var(--muted);font-variant-numeric:tabular-nums;width:2ch;text-align:right}
+.toc a{color:inherit;text-decoration:none;border-bottom:1px dotted var(--line)}
+.chapter h2{font-size:clamp(24px,6vw,32px);margin:8px 0 22px;line-height:1.15}
+.chapter .prose{font-family:var(--book);font-size:17px;line-height:1.75;max-width:62ch}
+.chapter .prose p{margin:0;text-indent:1.5em}
+.chapter .prose p:first-child{text-indent:0}
+.chapter .prose p:first-child::first-letter{font-family:var(--display);float:left;font-size:3.1em;line-height:.9;padding:4px 8px 0 0;color:var(--cloth)}
+.export{display:flex;flex-direction:column;gap:10px;border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--surface)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:999px;font-size:14px;z-index:20;max-width:calc(100% - 32px)}
+.spin{width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+</style>
+
+<div class="wrap">
+  <header class="brand">
+    <h1 id="brandTitle">Dr. Todd’s You Can’t Make This Sh*t Up</h1>
+    <span class="save-state" id="saveState">Loading…</span>
+  </header>
+
+  <nav class="switch" aria-label="View">
+    <button id="tabStories" aria-pressed="true">Stories</button>
+    <button id="tabBook" aria-pressed="false">Read the book</button>
+  </nav>
+
+  <main id="view"></main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(() => {
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const words = t => (String(t||"").trim().match(/\S+/g) || []).length;
+const paras = t => {
+  const s = String(t||"").replace(/\r/g,"").trim();
+  if (!s) return [];
+  const parts = /\n\s*\n/.test(s) ? s.split(/\n\s*\n/) : s.split(/\n/);
+  return parts.map(p => p.replace(/\s*\n\s*/g," ").trim()).filter(Boolean);
+};
+const newId = () => "s" + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const MIC = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+
+// ---------- state ----------
+const DEFAULT_BOOK = { title: "Dr. Todd’s You Can’t Make This Sh*t Up", subtitle: "Crazy short stories from a career in emergency medicine", author: "Dr. Todd", dedication: "" };
+let book = { ...DEFAULT_BOOK };
+let stories = {};               // id -> story
+let view = "stories";
+let editingId = null;
+let caps = { sample: null, downloads: null };
+let readOnly = false, signedOut = false;
+const hasClaude = !!(window.claude && typeof window.claude.use === "function");
+const use = n => hasClaude ? window.claude.use(n).catch(() => null) : Promise.resolve(null);
+let store = null;               // {kind:"db"|"local"}
+let toastTimer;
+
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.hidden=true,2600); }
+function setSave(msg){ $("#saveState").textContent = msg; }
+const ordered = () => Object.values(stories).sort((a,b)=>(a.order??0)-(b.order??0) || (a.createdAt??0)-(b.createdAt??0));
+
+// ---------- storage ----------
+const LS_KEY = "storybook-v1";
+function lsRead(){ try { return JSON.parse(localStorage.getItem(LS_KEY)||"null"); } catch { return null; } }
+function lsWrite(){ try { localStorage.setItem(LS_KEY, JSON.stringify({book, stories})); } catch {} }
+
+const queue = {}; const inflight = {};
+function persist(id, data){
+  if (!store) return;
+  if (store.kind === "local") { lsWrite(); setSave("Saved in this browser"); return; }
+  queue[id] = data; flush(id);
+}
+async function flush(id){
+  if (inflight[id] || !queue[id]) return;
+  const data = queue[id]; delete queue[id]; inflight[id] = true; setSave("Saving…");
+  try {
+    if (data === "__delete") await store.coll.doc(id).delete();
+    else await store.coll.doc(id).set(data);
+    setSave("All changes saved");
+  } catch(e){ setSave(e?.code === "quota_exceeded" ? "Not saved: the book is full" : "Not saved. Check your connection, or ask for edit access."); }
+  inflight[id] = false; if (queue[id]) flush(id);
+}
+const timers = {};
+function persistSoon(id, getData){ clearTimeout(timers[id]); setSave("Editing…"); timers[id] = setTimeout(()=>persist(id, getData()), 700); }
+const storyData = s => ({ kind:"story", title:s.title||"", text:s.text||"", order:s.order??0, createdAt:s.createdAt||Date.now(), updatedAt:Date.now(), example:!!s.example });
+const bookData = () => ({ kind:"book", title:book.title, subtitle:book.subtitle, author:book.author, dedication:book.dedication });
+
+async function initStore(){
+  const local = () => {
+    store = { kind:"local" };
+    const saved = lsRead();
+    if (saved) { book = saved.book || book; stories = saved.stories || {}; }
+    setSave("Saved in this browser"); render();
+  };
+  try {
+    const [db, user] = await Promise.all([use("db"), use("user")]);
+    if (!db && !hasClaude) return local();
+    if (!db) { signedOut = true; setSave("Sign in to Claude to open the book"); render(); return; }
+    const w = user ? await user.can("data.write").catch(() => null) : null;
+    readOnly = w === false;
+    store = { kind:"db", coll: db.collection("book") };
+    let first = true;
+    store.coll.onSnapshot(snap => {
+      const next = {};
+      snap.docs.forEach(d => {
+        const v = d.data(); if (!v) return;
+        if (v.kind === "book") { if (!document.activeElement?.closest?.(".bookinfo")) book = { title:v.title??DEFAULT_BOOK.title, subtitle:v.subtitle??DEFAULT_BOOK.subtitle, author:v.author??DEFAULT_BOOK.author, dedication:v.dedication||"" }; }
+        else if (v.kind === "story") next[d.id] = { id:d.id, ...v };
+      });
+      // keep the local copy of the story being edited
+      if (editingId && stories[editingId]) next[editingId] = stories[editingId];
+      stories = next;
+      setSave(first ? (readOnly ? "View only" : "Shared book · saved") : $("#saveState").textContent);
+      first = false;
+      if (!editingId && !document.activeElement?.closest?.(".bookinfo")) render(); else renderHeader();
+    }, () => { setSave("Couldn't load the book. Reload to try again."); });
+  } catch { local(); }
+}
+
+// ---------- rendering ----------
+function renderHeader(){ $("#brandTitle").textContent = book.title || DEFAULT_BOOK.title; }
+function render(){
+  renderHeader();
+  $("#tabStories").setAttribute("aria-pressed", view==="stories");
+  $("#tabBook").setAttribute("aria-pressed", view==="book");
+  if (view === "book") return renderBook();
+  if (editingId && stories[editingId]) return renderEditor();
+  editingId = null; renderList();
+}
+
+function renderList(){
+  if (signedOut){
+    $("#view").innerHTML = `<div class="empty"><h2>Sign in to open the book</h2><p>This book is shared between the people it was sent to. Sign in to Claude, then open this link again to read and add stories.</p></div>`;
+    return;
+  }
+  const list = ordered();
+  const ro = readOnly ? " disabled" : "";
+  const total = list.reduce((n,s)=>n+words(s.text),0);
+  const pages = Math.max(1, Math.round(total/250));
+  $("#view").innerHTML = `
+    <section style="display:flex;flex-direction:column;gap:18px">
+      <div class="bookinfo">
+        <label class="field" style="grid-column:1/-1"><span class="label">Book title</span><input id="bTitle" placeholder="${esc(DEFAULT_BOOK.title)}" value="${esc(book.title)}"${ro}></label>
+        <label class="field"><span class="label">Subtitle</span><input id="bSub" placeholder="${esc(DEFAULT_BOOK.subtitle)}" value="${esc(book.subtitle)}"${ro}></label>
+        <label class="field"><span class="label">Told by</span><input id="bAuthor" placeholder="Dr. Todd" value="${esc(book.author)}"${ro}></label>
+        <label class="field" style="grid-column:1/-1"><span class="label">Dedication (optional)</span><input id="bDed" placeholder="For every night-shift nurse who saw it too" value="${esc(book.dedication)}"${ro}></label>
+      </div>
+      <div class="row" style="justify-content:space-between">
+        <span class="stats">${list.length} ${list.length===1?"story":"stories"} · ${total.toLocaleString()} words · about ${list.length?pages:0} book ${pages===1?"page":"pages"}</span>
+        ${readOnly ? "" : `<button class="btn primary" id="newStory">${MIC} Record a story</button>`}
+      </div>
+      ${list.length ? `<div class="list">${list.map((s,i)=>`
+        <div class="item">
+          <span class="num">${i+1}</span>
+          <div class="body" data-open="${s.id}" role="button" tabindex="0">
+            <h3>${esc(s.title||"Untitled story")}${s.example?'<span class="tag">Example</span>':""}</h3>
+            <p>${esc(paras(s.text)[0]||"No words yet")}</p>
+            <div class="meta">${words(s.text).toLocaleString()} words</div>
+          </div>
+          <div class="moves"${readOnly?" hidden":""}>
+            <button aria-label="Move up" data-up="${s.id}" ${i===0?"disabled":""}>↑</button>
+            <button aria-label="Move down" data-down="${s.id}" ${i===list.length-1?"disabled":""}>↓</button>
+          </div>
+        </div>`).join("")}</div>`
+      : `<div class="empty">
+          <h2>Your first chapter starts here</h2>
+          <p>${store?.kind==="db" ? "This book is shared, so everyone with edit access sees the same stories." : "Stories save in this browser on this device."} One shift, one story. Tap <b>Record a story</b>, then use the microphone on your phone keyboard and tell it like you would at the nurses’ station. Each story becomes a chapter.</p>
+          ${readOnly ? "" : `<button class="btn" id="example">Add an example story</button>`}
+        </div>`}
+    </section>`;
+  const bind = (id, key) => $(id).addEventListener("input", e => { book[key] = e.target.value; renderHeader(); persistSoon("book", bookData); });
+  bind("#bTitle","title"); bind("#bSub","subtitle"); bind("#bAuthor","author"); bind("#bDed","dedication");
+  if (readOnly) $("#view").insertAdjacentHTML("afterbegin", `<p class="note" style="margin-bottom:12px">You can read this book. To add or edit stories, ask the person who shared it for edit access.</p>`);
+  if (!readOnly) $("#newStory").onclick = () => { const id=newId(); const max=Math.max(0,...ordered().map(s=>s.order??0)); stories[id]={id,title:"",text:"",order:max+1,createdAt:Date.now()}; editingId=id; persist(id, storyData(stories[id])); render(); setTimeout(()=>$("#storyText")?.focus(),50); };
+  $("#example")?.addEventListener("click", addExample);
+  $("#view").querySelectorAll("[data-open]").forEach(el => { const open=()=>{ if (readOnly){ const i=ordered().filter(x=>x.text.trim()).findIndex(x=>x.id===el.dataset.open); view="book"; render(); document.getElementById("ch"+(i+1))?.scrollIntoView(); return; } editingId=el.dataset.open; render(); window.scrollTo(0,0);}; el.onclick=open; el.onkeydown=e=>{if(e.key==="Enter")open();}; });
+  $("#view").querySelectorAll("[data-up],[data-down]").forEach(b => b.onclick = () => move(b.dataset.up||b.dataset.down, b.dataset.up?-1:1));
+}
+
+function move(id, dir){
+  const list = ordered(); const i = list.findIndex(s=>s.id===id); const j = i+dir;
+  if (j<0||j>=list.length) return;
+  [list[i], list[j]] = [list[j], list[i]];
+  list.forEach((s,k)=>{ if (s.order!==k+1){ s.order=k+1; persist(s.id, storyData(s)); } });
+  render();
+}
+
+function addExample(){
+  const id = newId();
+  stories[id] = { id, example:true, order:1, createdAt:Date.now(), title:"The Man Who Brought His Own Stitches",
+    text:"It's about three in the morning, the board is finally quiet, and a guy walks in holding his forearm wrapped in a dish towel. Calm as anything. He sits down and tells triage he just needs a little help finishing.\n\nFinishing what, we ask. He unwraps the towel and he has already put in four stitches himself. Fishing line. Sewing needle he boiled on the stove. Honestly, not terrible spacing. He says he ran out of light on the porch and his hands got shaky after the fourth one.\n\nSo we cleaned it up, took his stitches out, and did it properly, and the whole time he was giving me pointers. When he left he shook my hand and said I had good technique. Best review I got all year." };
+  persist(id, storyData(stories[id])); render(); toast("Example story added. Delete it any time.");
+}
+
+function renderEditor(){
+  const s = stories[editingId];
+  $("#view").innerHTML = `
+    <section class="editor">
+      <div class="row" style="justify-content:space-between">
+        <button class="btn quiet" id="back">← All stories</button>
+        <span class="stats" id="wc">${words(s.text).toLocaleString()} words</span>
+      </div>
+      <input class="titlein" id="storyTitle" placeholder="Story title" value="${esc(s.title)}" aria-label="Story title">
+      <div class="dictate">${MIC}<div><b>Tap the microphone on your keyboard</b> and tell the story out loud. Pause whenever you need to and pick it back up. Leave out patient names, dates and other identifying details.</div></div>
+      <textarea id="storyText" placeholder="So it’s three in the morning, and this guy walks in…" aria-label="Story text">${esc(s.text)}</textarea>
+      <div class="row">
+        <button class="btn primary" id="polish">Clean up with Claude</button>
+        <button class="btn" id="done">Save story</button>
+        <span style="flex:1"></span>
+        <button class="btn quiet danger" id="del">Delete</button>
+      </div>
+      <p class="note" id="polishNote">Clean up fixes punctuation and paragraphs from dictation, drops the "ums", keeps your words and voice, and suggests a title if you don't have one.</p>
+    </section>`;
+  const sync = () => { s.text = $("#storyText").value; s.title = $("#storyTitle").value; $("#wc").textContent = words(s.text).toLocaleString()+" words"; persistSoon(s.id, () => storyData(s)); };
+  $("#storyText").addEventListener("input", sync);
+  $("#storyTitle").addEventListener("input", sync);
+  const close = () => { clearTimeout(timers[s.id]); persist(s.id, storyData(s)); editingId=null; render(); };
+  $("#back").onclick = close; $("#done").onclick = () => { close(); toast("Story saved"); };
+  let armed = false;
+  $("#del").onclick = e => {
+    if (!armed){ armed=true; e.target.textContent="Tap again to delete"; setTimeout(()=>{armed=false; if($("#del")) $("#del").textContent="Delete";},3000); return; }
+    clearTimeout(timers[s.id]); delete stories[s.id]; editingId=null;
+    if (store?.kind==="db") persist(s.id,"__delete"); else lsWrite();
+    render(); toast("Story deleted");
+  };
+  const pb = $("#polish");
+  if (caps.sample === false) { pb.hidden = true; $("#polishNote").hidden = true; }
+  pb.onclick = () => polish(s);
+}
+
+async function polish(s){
+  const pb = $("#polish"), note = $("#polishNote");
+  if (!s.text.trim()) { note.textContent = "Record or type some of the story first."; note.className="note err"; return; }
+  if (!caps.sample) { note.textContent = "Clean up isn't available here."; note.className="note err"; return; }
+  pb.disabled = true; pb.innerHTML = '<span class="spin"></span> Cleaning up…';
+  try {
+    const out = await caps.sample.json(
+`You are editing a true story from an emergency physician's career, told out loud and captured with phone dictation. It will become a chapter in a book titled "${book.title || DEFAULT_BOOK.title}". The tone is funny, frank and a little irreverent; keep it that way, including any swearing.
+Rules:
+- Keep the teller's own words, voice, humor and point of view. This is light copyediting, not rewriting.
+- Fix punctuation, capitalization and obvious dictation mistakes (misheard words where the intended word is clear).
+- Remove filler like "um", "uh", "you know", "like" when used as filler, and accidental repeats.
+- Break the text into natural paragraphs, separated by a blank line.
+- Do not add facts, events, dialogue or a moral. Do not summarize.
+- Keep medical terms as spoken. If a patient's real name appears, replace it with a generic description like "the patient" or "this guy".
+- Title: ${s.title.trim() ? `keep exactly "${s.title.trim()}"` : "suggest a short, warm title (2 to 7 words) drawn from the story itself"}.
+Return JSON only: {"title": string, "text": string}
+
+STORY:
+${s.text}`, { modelTier:"default" });
+    if (out && typeof out.text === "string" && out.text.trim()) {
+      s.text = out.text.trim(); if (!s.title.trim() && out.title) s.title = String(out.title).trim();
+      s.example = false; persist(s.id, storyData(s)); renderEditor(); toast("Story cleaned up");
+      return;
+    }
+    throw new Error();
+  } catch(e){
+    pb.disabled=false; pb.textContent="Clean up with Claude";
+    note.className="note err";
+    note.textContent = e?.code==="not_granted" ? "Clean up needs your permission. Allow it from the artifact's Permissions menu to use it."
+      : e?.code==="rate_limited" ? "Too many requests just now. Wait a minute and try again."
+      : "Clean up didn't finish. Your story is unchanged. Try again.";
+  }
+}
+
+function chapterHTML(s, i){
+  return `<article class="page chapter" id="ch${i+1}"><div class="ch-label">Chapter ${i+1}</div><h2>${esc(s.title||"Untitled story")}</h2><div class="prose">${paras(s.text).map(p=>`<p>${esc(p)}</p>`).join("")}</div></article>`;
+}
+function renderBook(){
+  const list = ordered().filter(s=>s.text.trim());
+  if (!list.length){
+    $("#view").innerHTML = `<div class="empty"><h2>No chapters yet</h2><p>Record a story and it will show up here as the first chapter of your book.</p><button class="btn primary" id="goRec">${MIC} Record a story</button></div>`;
+    $("#goRec").onclick = () => { view="stories"; render(); $("#newStory")?.click(); };
+    return;
+  }
+  const title = book.title || DEFAULT_BOOK.title;
+  $("#view").innerHTML = `
+    <section style="display:flex;flex-direction:column;gap:18px">
+      <div class="export">
+        <span class="label">Save your book</span>
+        <div class="row">
+          <button class="btn primary" id="epub">E-book (.epub)</button>
+          <button class="btn" id="html">Web page (.html)</button>
+        </div>
+        <p class="note" id="exNote">The e-book opens in Apple Books, Google Play Books and Kindle (send it with Send to Kindle). The web page opens in any browser and can be printed.</p>
+      </div>
+      <div class="page titlepage"><h2>${esc(title)}</h2>${book.subtitle?`<div class="by" style="font-style:normal">${esc(book.subtitle)}</div>`:""}<div class="rule"></div>${book.author?`<div class="by">Told by ${esc(book.author)}</div>`:""}</div>
+      ${book.dedication?`<div class="page dedication">${esc(book.dedication)}</div>`:""}
+      <nav class="page toc"><h3>Contents</h3><ol>${list.map((s,i)=>`<li><span>${i+1}</span><a href="#ch${i+1}">${esc(s.title||"Untitled story")}</a></li>`).join("")}</ol></nav>
+      ${list.map(chapterHTML).join("")}
+    </section>`;
+  $("#view").querySelectorAll(".toc a").forEach(a => a.onclick = e => { e.preventDefault(); document.getElementById(a.getAttribute("href").slice(1))?.scrollIntoView({behavior:"smooth"}); });
+  if (caps.downloads === false && hasClaude) { $("#epub").disabled = $("#html").disabled = true; $("#exNote").textContent = "Saving files isn't available in this view."; }
+  $("#epub").onclick = () => exportFile("epub", list);
+  $("#html").onclick = () => exportFile("html", list);
+}
+
+// ---------- export ----------
+const slug = t => (t||"dr-todds-stories").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,60) || "my-storybook";
+const BOOK_CSS = `body{font-family:Georgia,"Times New Roman",serif;line-height:1.6;margin:0 5%}h1,h2{font-weight:normal;text-align:center}h1{margin-top:30%;font-size:2em}.by{text-align:center;font-style:italic}.ded{text-align:center;font-style:italic;margin-top:30%}.label{text-align:center;font-size:.75em;letter-spacing:.15em;text-transform:uppercase;margin-top:3em}p{margin:0;text-indent:1.5em}p.first{text-indent:0}`;
+
+function buildHTML(list){
+  const t = esc(book.title||"Untitled Book");
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${t}</title><style>body{font-family:Georgia,serif;max-width:38em;margin:0 auto;padding:2em 1.2em;line-height:1.7;color:#1c2427;background:#fffefb}h1,h2{font-weight:normal;text-align:center}h1{font-size:2.4em;margin:3em 0 .3em}.by{text-align:center;font-style:italic;color:#5e6a6c}.ded{text-align:center;font-style:italic;color:#5e6a6c;margin:4em 0}.label{text-align:center;font:600 .75em system-ui,sans-serif;letter-spacing:.15em;text-transform:uppercase;color:#1d5c55;margin-top:5em}p{margin:0;text-indent:1.5em}p.first{text-indent:0}ol{line-height:2}a{color:inherit}@media print{.ch{page-break-before:always}}</style></head><body>
+<h1>${t}</h1>${book.subtitle?`<p class="by" style="font-style:normal">${esc(book.subtitle)}</p>`:""}${book.author?`<p class="by">Told by ${esc(book.author)}</p>`:""}
+${book.dedication?`<p class="ded">${esc(book.dedication)}</p>`:""}
+<div class="ch"><p class="label">Contents</p><ol>${list.map((s,i)=>`<li><a href="#ch${i+1}">${esc(s.title||"Untitled story")}</a></li>`).join("")}</ol></div>
+${list.map((s,i)=>`<section class="ch" id="ch${i+1}"><p class="label">Chapter ${i+1}</p><h2>${esc(s.title||"Untitled story")}</h2>${paras(s.text).map((p,k)=>`<p${k?"":' class="first"'}>${esc(p)}</p>`).join("")}</section>`).join("\n")}
+</body></html>`;
+}
+
+async function buildEPUB(list){
+  if (!window.JSZip) throw new Error("zip");
+  const zip = new JSZip();
+  const uid = "urn:uuid:" + (crypto.randomUUID ? crypto.randomUUID() : newId());
+  const title = esc(book.title||"Untitled Book"), author = esc(book.author||"Unknown");
+  const now = new Date().toISOString().replace(/\.\d+Z$/,"Z");
+  const xhtml = (t, body) => `<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE html>\n<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en"><head><meta charset="utf-8"/><title>${t}</title><link rel="stylesheet" type="text/css" href="style.css"/></head><body>${body}</body></html>`;
+  zip.file("mimetype","application/epub+zip",{compression:"STORE"});
+  zip.file("META-INF/container.xml",`<?xml version="1.0"?>\n<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>`);
+  zip.file("OEBPS/style.css", BOOK_CSS);
+  zip.file("OEBPS/title.xhtml", xhtml(title, `<h1>${title}</h1>${book.subtitle?`<p class="by">${esc(book.subtitle)}</p>`:""}${book.author?`<p class="by">Told by ${author}</p>`:""}${book.dedication?`<p class="ded">${esc(book.dedication)}</p>`:""}`));
+  const items = [], spine = [], navLi = [], ncx = [];
+  list.forEach((s,i) => {
+    const f = `ch${i+1}.xhtml`, ct = esc(s.title||"Untitled story");
+    zip.file("OEBPS/"+f, xhtml(ct, `<p class="label">Chapter ${i+1}</p><h2>${ct}</h2>${paras(s.text).map((p,k)=>`<p${k?"":' class="first"'}>${esc(p)}</p>`).join("")}`));
+    items.push(`<item id="ch${i+1}" href="${f}" media-type="application/xhtml+xml"/>`);
+    spine.push(`<itemref idref="ch${i+1}"/>`);
+    navLi.push(`<li><a href="${f}">${ct}</a></li>`);
+    ncx.push(`<navPoint id="n${i+1}" playOrder="${i+2}"><navLabel><text>${ct}</text></navLabel><content src="${f}"/></navPoint>`);
+  });
+  zip.file("OEBPS/nav.xhtml", xhtml("Contents", `<nav epub:type="toc" id="toc"><h2>Contents</h2><ol>${navLi.join("")}</ol></nav>`));
+  zip.file("OEBPS/toc.ncx", `<?xml version="1.0" encoding="utf-8"?>\n<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><head><meta name="dtb:uid" content="${uid}"/></head><docTitle><text>${title}</text></docTitle><navMap><navPoint id="n0" playOrder="1"><navLabel><text>${title}</text></navLabel><content src="title.xhtml"/></navPoint>${ncx.join("")}</navMap></ncx>`);
+  zip.file("OEBPS/content.opf", `<?xml version="1.0" encoding="utf-8"?>\n<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="bookid"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="bookid">${uid}</dc:identifier><dc:title>${title}</dc:title><dc:creator>${author}</dc:creator><dc:language>en</dc:language><meta property="dcterms:modified">${now}</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/><item id="css" href="style.css" media-type="text/css"/><item id="title" href="title.xhtml" media-type="application/xhtml+xml"/>${items.join("")}</manifest><spine toc="ncx"><itemref idref="title"/><itemref idref="nav"/>${spine.join("")}</spine></package>`);
+  return zip.generateAsync({ type:"blob", mimeType:"application/epub+zip" });
+}
+
+async function exportFile(kind, list){
+  const btn = $("#"+kind), label = btn.textContent, note = $("#exNote");
+  if (!caps.downloads && hasClaude) { note.textContent = "Saving files isn't available in this view."; note.className="note err"; return; }
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Preparing…';
+  try {
+    const data = kind === "epub" ? await buildEPUB(list) : buildHTML(list);
+    const filename = `${slug(book.title)}.${kind}`;
+    if (caps.downloads) await caps.downloads.save({ filename, data });
+    else {
+      const blob = data instanceof Blob ? data : new Blob([data], { type: "text/html" });
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    }
+    toast(kind==="epub" ? "E-book saved" : "Web page saved");
+  } catch(e){
+    if (e?.code !== "declined") { note.className="note err"; note.textContent = e?.message==="zip" ? "The e-book builder didn't load. Reload the page and try again." : "The file wasn't saved. Try again in a moment."; }
+  }
+  btn.disabled = false; btn.textContent = label;
+}
+
+// ---------- boot ----------
+$("#tabStories").onclick = () => { if (editingId && stories[editingId]) { persist(editingId, storyData(stories[editingId])); } editingId=null; view="stories"; render(); };
+$("#tabBook").onclick = () => { if (editingId && stories[editingId]) { persist(editingId, storyData(stories[editingId])); } editingId=null; view="book"; render(); window.scrollTo(0,0); };
+render();
+initStore();
+use("sample").then(s => { caps.sample = s || false; if (editingId) renderEditor(); });
+use("downloads").then(d => { caps.downloads = d || false; if (view==="book") renderBook(); });
+})();
+</script>
+
+</body>
+</html>

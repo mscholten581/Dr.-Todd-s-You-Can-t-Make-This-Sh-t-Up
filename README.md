@@ -15,9 +15,9 @@ Leave out patient names, dates and other identifying details.
 
 ## Where stories are saved
 
-- **On this website:** stories are saved in your browser on that device only. Clearing browser data deletes them, so save the e-book regularly as a backup.
+- **On this website:** stories are saved to one shared book in Supabase. People sign in with an emailed link, and only emails listed in the Supabase `allowed_emails` table can read or add stories. To add someone, open Supabase → Table Editor → `allowed_emails` and insert their email.
 - **In Claude:** the Claude version of this app keeps one shared book for everyone it’s shared with and adds a “Clean up with Claude” button that tidies dictated text.
 
 ## Files
 
-- `index.html` is the whole app: one self-contained page with no build step. It loads fonts from Google Fonts and JSZip from cdnjs for the e-book export.
+- `index.html` is the whole app: one self-contained page with no build step. It loads fonts from Google Fonts, JSZip from cdnjs for the e-book export, and the Supabase client from jsDelivr. The Supabase publishable key in the page is meant to be public; access is controlled by row-level security in the database.

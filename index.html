@@ -128,6 +128,20 @@ const paras = t => {
   return parts.map(p => p.replace(/\s*\n\s*/g," ").trim()).filter(Boolean);
 };
 const newId = () => (store?.kind === "sb" && crypto.randomUUID) ? crypto.randomUUID() : "s" + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const SMALL = new Set(["a","an","the","and","but","or","of","to","in","on","at","for","with","by","from","as","into","is","was"]);
+const FILLER = /^(so|okay|ok|well|um+|uh+|alright|all right|and|anyway|like|you know|now|right|hey|yeah)[,.!]*\s+/i;
+function autoTitle(text){
+  let t = (paras(text)[0] || "").split(/(?<=[.!?])\s/)[0] || "";
+  t = t.replace(/["“”]/g, "").trim();
+  for (let i = 0; i < 4 && FILLER.test(t); i++) t = t.replace(FILLER, "");
+  let w = t.split(/\s+/).filter(Boolean).slice(0, 7);
+  while (w.length > 2 && SMALL.has(w[w.length-1].toLowerCase().replace(/[^a-z]/g,""))) w.pop();
+  t = w.join(" ").replace(/[,;:.!?…-]+$/, "");
+  if (!t) return "";
+  return t.split(" ").map((x,i) => (i && SMALL.has(x.toLowerCase())) ? x.toLowerCase() : x.charAt(0).toUpperCase() + x.slice(1)).join(" ");
+}
+const titleOf = s => (s.title || "").trim() || autoTitle(s.text) || "Untitled story";
+function fillTitle(s){ if (s && !(s.title || "").trim()){ const t = autoTitle(s.text); if (t) s.title = t; } }
 const MIC = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
 
 // ---------- state ----------
@@ -310,7 +324,7 @@ function renderList(){
         <div class="item">
           <span class="num">${i+1}</span>
           <div class="body" data-open="${s.id}" role="button" tabindex="0">
-            <h3>${esc(s.title||"Untitled story")}${s.example?'<span class="tag">Example</span>':""}</h3>
+            <h3>${esc(titleOf(s))}${s.example?'<span class="tag">Example</span>':""}</h3>
             <p>${esc(paras(s.text)[0]||"No words yet")}</p>
             <div class="meta">${words(s.text).toLocaleString()} words</div>
           </div>
@@ -359,7 +373,7 @@ function renderEditor(){
         <button class="btn quiet" id="back">← All stories</button>
         <span class="stats" id="wc">${words(s.text).toLocaleString()} words</span>
       </div>
-      <input class="titlein" id="storyTitle" placeholder="Story title" value="${esc(s.title)}" aria-label="Story title">
+      <input class="titlein" id="storyTitle" placeholder="Title (or leave blank and the first line becomes the title)" value="${esc(s.title)}" aria-label="Story title">
       <div class="dictate">${MIC}<div><b>Tap the microphone on your keyboard</b> and tell the story out loud. Pause whenever you need to and pick it back up. Leave out patient names, dates and other identifying details.</div></div>
       <textarea id="storyText" placeholder="So it’s three in the morning, and this guy walks in…" aria-label="Story text">${esc(s.text)}</textarea>
       <div class="row">
@@ -373,7 +387,7 @@ function renderEditor(){
   const sync = () => { s.text = $("#storyText").value; s.title = $("#storyTitle").value; $("#wc").textContent = words(s.text).toLocaleString()+" words"; persistSoon(s.id, () => storyData(s)); };
   $("#storyText").addEventListener("input", sync);
   $("#storyTitle").addEventListener("input", sync);
-  const close = () => { clearTimeout(timers[s.id]); persist(s.id, storyData(s)); editingId=null; render(); };
+  const close = () => { clearTimeout(timers[s.id]); fillTitle(s); persist(s.id, storyData(s)); editingId=null; render(); };
   $("#back").onclick = close; $("#done").onclick = () => { close(); toast("Story saved"); };
   let armed = false;
   $("#del").onclick = e => {
@@ -423,7 +437,7 @@ ${s.text}`, { modelTier:"default" });
 }
 
 function chapterHTML(s, i){
-  return `<article class="page chapter" id="ch${i+1}"><div class="ch-label">Chapter ${i+1}</div><h2>${esc(s.title||"Untitled story")}</h2><div class="prose">${paras(s.text).map(p=>`<p>${esc(p)}</p>`).join("")}</div></article>`;
+  return `<article class="page chapter" id="ch${i+1}"><div class="ch-label">Chapter ${i+1}</div><h2>${esc(titleOf(s))}</h2><div class="prose">${paras(s.text).map(p=>`<p>${esc(p)}</p>`).join("")}</div></article>`;
 }
 function renderBook(){
   const list = ordered().filter(s=>s.text.trim());
@@ -445,7 +459,7 @@ function renderBook(){
       </div>
       <div class="page titlepage"><h2>${esc(title)}</h2>${book.subtitle?`<div class="by" style="font-style:normal">${esc(book.subtitle)}</div>`:""}<div class="rule"></div>${book.author?`<div class="by">Told by ${esc(book.author)}</div>`:""}</div>
       ${book.dedication?`<div class="page dedication">${esc(book.dedication)}</div>`:""}
-      <nav class="page toc"><h3>Contents</h3><ol>${list.map((s,i)=>`<li><span>${i+1}</span><a href="#ch${i+1}">${esc(s.title||"Untitled story")}</a></li>`).join("")}</ol></nav>
+      <nav class="page toc"><h3>Contents</h3><ol>${list.map((s,i)=>`<li><span>${i+1}</span><a href="#ch${i+1}">${esc(titleOf(s))}</a></li>`).join("")}</ol></nav>
       ${list.map(chapterHTML).join("")}
     </section>`;
   $("#view").querySelectorAll(".toc a").forEach(a => a.onclick = e => { e.preventDefault(); document.getElementById(a.getAttribute("href").slice(1))?.scrollIntoView({behavior:"smooth"}); });
@@ -463,8 +477,8 @@ function buildHTML(list){
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${t}</title><style>body{font-family:Georgia,serif;max-width:38em;margin:0 auto;padding:2em 1.2em;line-height:1.7;color:#1c2427;background:#fffefb}h1,h2{font-weight:normal;text-align:center}h1{font-size:2.4em;margin:3em 0 .3em}.by{text-align:center;font-style:italic;color:#5e6a6c}.ded{text-align:center;font-style:italic;color:#5e6a6c;margin:4em 0}.label{text-align:center;font:600 .75em system-ui,sans-serif;letter-spacing:.15em;text-transform:uppercase;color:#1d5c55;margin-top:5em}p{margin:0;text-indent:1.5em}p.first{text-indent:0}ol{line-height:2}a{color:inherit}@media print{.ch{page-break-before:always}}</style></head><body>
 <h1>${t}</h1>${book.subtitle?`<p class="by" style="font-style:normal">${esc(book.subtitle)}</p>`:""}${book.author?`<p class="by">Told by ${esc(book.author)}</p>`:""}
 ${book.dedication?`<p class="ded">${esc(book.dedication)}</p>`:""}
-<div class="ch"><p class="label">Contents</p><ol>${list.map((s,i)=>`<li><a href="#ch${i+1}">${esc(s.title||"Untitled story")}</a></li>`).join("")}</ol></div>
-${list.map((s,i)=>`<section class="ch" id="ch${i+1}"><p class="label">Chapter ${i+1}</p><h2>${esc(s.title||"Untitled story")}</h2>${paras(s.text).map((p,k)=>`<p${k?"":' class="first"'}>${esc(p)}</p>`).join("")}</section>`).join("\n")}
+<div class="ch"><p class="label">Contents</p><ol>${list.map((s,i)=>`<li><a href="#ch${i+1}">${esc(titleOf(s))}</a></li>`).join("")}</ol></div>
+${list.map((s,i)=>`<section class="ch" id="ch${i+1}"><p class="label">Chapter ${i+1}</p><h2>${esc(titleOf(s))}</h2>${paras(s.text).map((p,k)=>`<p${k?"":' class="first"'}>${esc(p)}</p>`).join("")}</section>`).join("\n")}
 </body></html>`;
 }
 
@@ -481,7 +495,7 @@ async function buildEPUB(list){
   zip.file("OEBPS/title.xhtml", xhtml(title, `<h1>${title}</h1>${book.subtitle?`<p class="by">${esc(book.subtitle)}</p>`:""}${book.author?`<p class="by">Told by ${author}</p>`:""}${book.dedication?`<p class="ded">${esc(book.dedication)}</p>`:""}`));
   const items = [], spine = [], navLi = [], ncx = [];
   list.forEach((s,i) => {
-    const f = `ch${i+1}.xhtml`, ct = esc(s.title||"Untitled story");
+    const f = `ch${i+1}.xhtml`, ct = esc(titleOf(s));
     zip.file("OEBPS/"+f, xhtml(ct, `<p class="label">Chapter ${i+1}</p><h2>${ct}</h2>${paras(s.text).map((p,k)=>`<p${k?"":' class="first"'}>${esc(p)}</p>`).join("")}`));
     items.push(`<item id="ch${i+1}" href="${f}" media-type="application/xhtml+xml"/>`);
     spine.push(`<itemref idref="ch${i+1}"/>`);
@@ -515,8 +529,8 @@ async function exportFile(kind, list){
 }
 
 // ---------- boot ----------
-$("#tabStories").onclick = () => { if (editingId && stories[editingId]) { persist(editingId, storyData(stories[editingId])); } editingId=null; view="stories"; render(); };
-$("#tabBook").onclick = () => { if (editingId && stories[editingId]) { persist(editingId, storyData(stories[editingId])); } editingId=null; view="book"; render(); window.scrollTo(0,0); };
+$("#tabStories").onclick = () => { if (editingId && stories[editingId]) { clearTimeout(timers[editingId]); fillTitle(stories[editingId]); persist(editingId, storyData(stories[editingId])); } editingId=null; view="stories"; render(); };
+$("#tabBook").onclick = () => { if (editingId && stories[editingId]) { clearTimeout(timers[editingId]); fillTitle(stories[editingId]); persist(editingId, storyData(stories[editingId])); } editingId=null; view="book"; render(); window.scrollTo(0,0); };
 render();
 initStore();
 use("sample").then(s => { caps.sample = s || false; if (editingId) renderEditor(); });
